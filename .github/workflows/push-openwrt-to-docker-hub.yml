@@ -30,13 +30,18 @@ jobs:
           sudo -E apt-get -y install jq
           res="$(curl --header "authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -s "https://api.github.com/repos/${GITHUB_REPOSITORY}/releases/latest")"
           tag_name="$(echo $res | jq -r '.tag_name')"
-          echo "build_tag=${tag_name}" >> ${GITHUB_OUTPUT}
           openwrt_url="$(echo $res | jq -r '.assets[0].browser_download_url')"
           [[ -z "${tag_name}" ]] && echo -e "OpenWrt release not found!" && exit 1
           [[ -z "${openwrt_url}" ]] && echo -e "OpenWrt file not found!" && exit 1
           rm -rf ${{ env.DOCKER_OUTPATH }} 2>/dev/null && mkdir -p ${{ env.DOCKER_OUTPATH }}
-          wget -q ${openwrt_url} -O "${{ env.DOCKER_OUTPATH }}/openwrt-armvirt-64-default-rootfs.tar.gz"
+          wget -q ${openwrt_url} -O "${{ env.DOCKER_OUTPATH }}/rootfs.tar.gz"
           cp Dockerfile ${{ env.DOCKER_OUTPATH }}/ 
+          platform="linux/amd64"
+          if echo "$openwrt_url" | grep -q "arm"; then
+            platform="linux/arm64"
+          fi
+          echo "build_tag=${tag_name}" >> ${GITHUB_OUTPUT}
+          echo "platform=${platform}" >> ${GITHUB_OUTPUT}
 
       - name: Set up QEMU
         id: qemu
@@ -58,9 +63,9 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          platforms: linux/arm64
+          platforms: ${{ steps.down.outputs.platform }}
           context: ${{ env.DOCKER_OUTPATH }}
           tags: |
-            xuzhengtong/openwrt-aarch64:latest
-            xuzhengtong/openwrt-aarch64:${{ steps.down.outputs.build_tag }}
+            xuzhengtong/openwrt:latest
+            xuzhengtong/openwrt:${{ steps.down.outputs.build_tag }}
 
