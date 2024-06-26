@@ -107,12 +107,19 @@ jobs:
           echo "build_tag=v$(date +"%Y.%m.%d.%H%M")" >> ${GITHUB_OUTPUT}
           echo "status=success" >> ${GITHUB_OUTPUT}
 
+      - name: Organize files
+        id: organize
+        if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
+        run: |
+          rm -rf openwrt/bin/targets/*/*/packages
+
       - name: Upload OpenWrt Firmware to Release
         uses: ncipollo/release-action@main
         if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
         with:
+          commit: ${{ github.ref_name }}
           tag: ${{ steps.compile.outputs.build_tag }}
-          artifacts: openwrt/bin/targets/*/*/*rootfs.tar.gz
+          artifacts: openwrt/bin/targets/*/*/*
           allowUpdates: true
           token: ${{ secrets.GH_TOKEN }}
 
