@@ -9,9 +9,15 @@ name: Build OpenWrt with lede
 on:
   repository_dispatch:
   workflow_dispatch:
+    inputs: 
+      repo:
+        description: "Select Build Repo"
+        required: true
+        default: "coolsnowwolf"
+        type: string
 
 env:
-  REPO_URL: https://github.com/coolsnowwolf/lede
+  REPO_URL: https://github.com/${{inputs.repo}}/lede
   REPO_BRANCH: master
   FEEDS_CONF: feeds.conf.default
   CONFIG_FILE: config
